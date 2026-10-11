@@ -1,8 +1,6 @@
 <div align="center">
-  <img src="public/brand/leaf.svg" width="72" height="72" alt="GitMint leaf mark" />
+  <img src="public/brand/wordmark.svg" width="300" alt="GitMint — Your Git workflow, refreshed." />
 
-  <h1>GitMint</h1>
-  <p><strong>Your Git workflow, refreshed.</strong></p>
   <p>A focused, open-source Git client for macOS. Browse your repositories, review changes, and make everyday Git work feel clear.</p>
 
   <p><a href="https://github.com/filipmoco0/GitMint/releases/latest"><strong>Download GitMint for macOS</strong></a> &nbsp;·&nbsp; <a href="https://github.com/filipmoco0/GitMint/issues">Report a problem</a> &nbsp;·&nbsp; <a href="CONTRIBUTING.md">Contribute</a></p>
