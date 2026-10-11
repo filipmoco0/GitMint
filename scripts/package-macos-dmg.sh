@@ -36,4 +36,29 @@ codesign --verify --deep --strict --verbose=2 "$APP_PATH"
   -D "volume_icon=$PROJECT_ROOT/src-tauri/icons/icon.icns" \
   "GitMint Installer" "$OUTPUT_PATH"
 
+# dmgbuild stores Finder positioning metadata on the app bundle. Remove it and
+# reseal the app, then replace the DMG copy so Finder metadata cannot break the
+# signature after packaging.
+xattr -d com.apple.FinderInfo "$APP_PATH" 2>/dev/null || true
+codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$APP_PATH"
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/gitmint-dmg.XXXXXX")"
+WORKING_DMG="$WORK_DIR/GitMint-writable.dmg"
+SIGNED_DMG="$WORK_DIR/GitMint-signed.dmg"
+MOUNT_DIR="$WORK_DIR/mount"
+mkdir -p "$MOUNT_DIR"
+hdiutil convert "$OUTPUT_PATH" -format UDRW -o "$WORKING_DMG"
+hdiutil attach -nobrowse -readwrite -mountpoint "$MOUNT_DIR" "$WORKING_DMG"
+IMAGE_APP="$MOUNT_DIR/GitMint.app"
+rm -rf "$IMAGE_APP"
+ditto "$APP_PATH" "$IMAGE_APP"
+xattr -d com.apple.FinderInfo "$IMAGE_APP" 2>/dev/null || true
+codesign --verify --deep --strict --verbose=2 "$IMAGE_APP"
+hdiutil detach "$MOUNT_DIR"
+hdiutil convert "$WORKING_DMG" -format UDZO -o "$SIGNED_DMG"
+mv -f "$SIGNED_DMG" "$OUTPUT_PATH"
+rm -rf "$WORK_DIR"
+hdiutil verify "$OUTPUT_PATH"
+
 echo "Created $OUTPUT_PATH"
