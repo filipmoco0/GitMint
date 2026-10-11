@@ -4,7 +4,7 @@ import { open } from '@tauri-apps/plugin-dialog'
 import {
   GitBranch, GitCommitHorizontal, FolderGit2, FolderOpen, ChevronDown, Download,
   History, Leaf, RefreshCw, Settings2, Sparkles, AlertCircle, FileCode2, ChevronRight, Plus, Minus,
-  Search, LockKeyhole, ExternalLink, Library,
+  Search, LockKeyhole, ExternalLink, Library, ArrowDownToLine, ArrowUpFromLine,
 } from 'lucide-react'
 import './App.css'
 
@@ -51,6 +51,7 @@ function App() {
   const [loadingChanges, setLoadingChanges] = useState(false)
   const [loadingDiff, setLoadingDiff] = useState(false)
   const [operationBusy, setOperationBusy] = useState(false)
+  const [syncBusy, setSyncBusy] = useState(false)
   const [commitMessage, setCommitMessage] = useState('')
   const [notice, setNotice] = useState('')
   const [branches, setBranches] = useState<Branch[]>([])
@@ -294,6 +295,23 @@ function App() {
     } finally { setOperationBusy(false) }
   }
 
+  async function syncRepository(direction: 'pull' | 'push') {
+    if (!repository) return
+    setSyncBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const message = await invoke<string>(direction === 'pull' ? 'pull_repository' : 'push_repository', { path: repository.path })
+      await refreshHistory(repository.path)
+      await refreshChanges(repository.path)
+      setNotice(message)
+    } catch (reason) {
+      setError(String(reason).replace(/^Error: /, ''))
+    } finally {
+      setSyncBusy(false)
+    }
+  }
+
   useEffect(() => { openRepositoryRef.current = openRepository })
 
   async function signInWithGithub() {
@@ -330,7 +348,7 @@ function App() {
     <button className="github-signin-button" onClick={() => void signInWithGithub()} disabled={authBusy}>
       <GithubMark size={17} />{authBusy ? 'Waiting for GitHub…' : 'Continue with GitHub'}
     </button>
-    <span className="auth-footnote">Repository access lets GitMint list public and private repos. GitHub’s OAuth permission also allows API changes to private repos; GitMint uses it only to show your repo list.</span>
+    <span className="auth-footnote">GitHub access lets GitMint list repositories and authenticate HTTPS clone, push, and pull operations. GitHub grants this OAuth app repository write permission; GitMint uses it only for actions you start.</span>
   </section></main>
 
   return (
@@ -339,7 +357,7 @@ function App() {
         <div className="brand-row">
           <div className="brand-mark"><img src="/gitmint.svg" alt="" /></div>
           <span className="brand-name">GitMint</span>
-          <span className="brand-version">PREVIEW</span>
+          <span className="brand-version">1.0</span>
         </div>
 
         <div className="repo-picker">
@@ -362,7 +380,7 @@ function App() {
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="sidebar-footer"><button className={`nav-item ${activeView === 'settings' ? 'active' : 'muted'}`} onClick={() => setActiveView('settings')}><Settings2 size={16} /><span>Settings</span></button><span className="footer-mark">v0.1.0-beta.1</span></div>
+          <div className="sidebar-footer"><button className={`nav-item ${activeView === 'settings' ? 'active' : 'muted'}`} onClick={() => setActiveView('settings')}><Settings2 size={16} /><span>Settings</span></button><span className="footer-mark">v1.0.0</span></div>
         </div>
       </aside>
 
@@ -371,6 +389,10 @@ function App() {
           <div className="breadcrumbs"><span>Workspace</span><span className="crumb-slash">/</span><strong>{activeView === 'settings' ? 'Settings' : activeView === 'repositories' ? 'Repositories' : repository?.name ?? 'No repository open'}</strong></div>
           <div className="topbar-actions">
             {repository && activeView !== 'repositories' && activeView !== 'settings' && <div className="branch-pill"><GitBranch size={13} /><span>{repository.branch}</span></div>}
+            {repository && activeView !== 'repositories' && activeView !== 'settings' && <div className="sync-actions">
+              <button className="sync-button" onClick={() => void syncRepository('pull')} disabled={syncBusy || busy || operationBusy} title="Pull fast-forward changes from GitHub"><ArrowDownToLine size={13} />Pull</button>
+              <button className="sync-button" onClick={() => void syncRepository('push')} disabled={syncBusy || busy || operationBusy} title="Push this branch to GitHub"><ArrowUpFromLine size={13} />Push</button>
+            </div>}
             {activeView !== 'repositories' && activeView !== 'settings' && <button className="icon-button" aria-label="Refresh repository" title="Refresh repository" onClick={() => repository && openRepository(repository.path)} disabled={!repository || busy}><RefreshCw size={15} className={busy ? 'spinning' : ''} /></button>}
             {githubUser && <button className="user-chip" onClick={() => void signOut()} title="Sign out of GitHub"><img src={githubUser.avatarUrl} alt="" /><span>{githubUser.login}</span><span className="signout-label">Sign out</span></button>}
           </div>
@@ -381,8 +403,8 @@ function App() {
 
         {activeView === 'settings' ? <div className="settings-view">
           <div className="repo-heading"><div><div className="eyebrow"><span className="status-dot" /> PREFERENCES</div><h1>Settings</h1><p className="repo-subtitle">Choose how your repository library opens.</p></div></div>
-          <section className="settings-section"><div className="settings-section-title"><h2>Repository library</h2><p>Choose which repositories you see first when you open the library.</p></div><div className="settings-row settings-library-row"><div><strong>Show by default</strong><span>You can switch between these anytime.</span></div><div className="settings-choice" role="group" aria-label="Default repository library"><button className={libraryTab === 'github' ? 'selected' : ''} onClick={() => setLibraryTab('github')}><GithubMark size={14}/>GitHub</button><button className={libraryTab === 'local' ? 'selected' : ''} onClick={() => setLibraryTab('local')}><FolderGit2 size={14}/>On this Mac</button></div></div></section>
-          <section className="settings-section"><div className="settings-section-title"><h2>GitHub account</h2><p>Signed in as {githubUser.login}. GitMint uses GitHub to show your repositories.</p></div><div className="settings-row"><div className="settings-account"><img src={githubUser.avatarUrl} alt=""/><div><strong>{githubUser.login}</strong><span>Connected</span></div></div><button className="settings-action secondary" onClick={() => void signOut()}>Sign out</button></div></section>
+          <section className="settings-section"><div className="settings-section-title"><h2>Repository library</h2><p>Choose which repositories you see first when you open the library.</p></div><div className="settings-row settings-library-row"><div><strong>Open to</strong><span>You can switch sources anytime in Repositories.</span></div><div className="settings-choice" role="group" aria-label="Default repository library"><button type="button" className={libraryTab === 'github' ? 'selected' : ''} aria-pressed={libraryTab === 'github'} onClick={() => setLibraryTab('github')}><GithubMark size={14}/>GitHub</button><button type="button" className={libraryTab === 'local' ? 'selected' : ''} aria-pressed={libraryTab === 'local'} onClick={() => setLibraryTab('local')}><FolderGit2 size={14}/>On this Mac</button></div></div></section>
+          <section className="settings-section"><div className="settings-section-title"><h2>GitHub account</h2><p>Signed in as {githubUser.login}. GitMint uses GitHub for repository browsing and sync actions you start.</p></div><div className="settings-row"><div className="settings-account"><img src={githubUser.avatarUrl} alt=""/><div><strong>{githubUser.login}</strong><span>Connected</span></div></div><button className="settings-action secondary" onClick={() => void signOut()}>Sign out</button></div></section>
           <section className="settings-section"><div className="settings-section-title"><h2>Recent repositories</h2><p>Clear GitMint’s remembered list. This never deletes repository files from your Mac.</p></div><div className="settings-row"><div><strong>{recent.length} {recent.length === 1 ? 'repository' : 'repositories'}</strong><span>Saved on this Mac</span></div><button className="settings-action" disabled={recent.length === 0} onClick={() => { if (window.confirm('Clear the recently opened repository list? Your repository files will not be deleted.')) { setRecent([]); setNotice('Recent repositories cleared') } }}>Clear list</button></div></section>
         </div> : activeView === 'repositories' ? <div className="library-view">
           <div className="repo-heading library-heading">
@@ -477,7 +499,7 @@ function ChangeGroup({ title, files, staged, selected, busy, onSelect, onAction 
 }
 
 function Brand() {
-  return <div className="auth-brand"><span className="auth-brand-mark"><img src="/gitmint.svg" alt="" /></span><strong>GitMint</strong><span>PREVIEW</span></div>
+  return <div className="auth-brand"><span className="auth-brand-mark"><img src="/gitmint.svg" alt="" /></span><strong>GitMint</strong><span>1.0</span></div>
 }
 
 function GithubMark({ size }: { size: number }) {

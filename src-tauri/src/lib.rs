@@ -6,6 +6,7 @@ mod history;
 mod operations;
 mod repository;
 mod status;
+mod sync;
 
 pub fn run_git_askpass() -> bool {
     if std::env::var_os("GITMINT_GIT_ASKPASS").is_none() {
@@ -49,7 +50,9 @@ pub fn run() {
             commands::create_commit,
             branches::list_branches,
             branches::create_branch,
-            branches::switch_branch
+            branches::switch_branch,
+            sync::pull_repository,
+            sync::push_repository
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

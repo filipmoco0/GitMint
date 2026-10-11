@@ -1,10 +1,10 @@
 # GitHub sign-in
 
-GitMint requires GitHub sign-in to browse repositories. The beta uses a public OAuth client ID and an HTTPS token broker. The client ID is not a secret; the OAuth client secret stays in the broker's deployment secrets and must never be added to the desktop app or `.env.local`.
+GitMint requires GitHub sign-in for repository browsing, cloning, and GitHub sync. The app uses a public OAuth client ID and an HTTPS token broker. The client ID is not a secret; the OAuth client secret stays in the broker's deployment secrets and must never be added to the desktop app or `.env.local`.
 
-## Use the GitMint beta configuration
+## Use the GitMint configuration
 
-Copy `.env.example` to `.env.local` and keep its values to use the GitMint beta OAuth app and hosted broker. The broker exchanges short-lived authorization codes and does not store or log access tokens. GitMint stores the returned token in macOS Keychain.
+Copy `.env.example` to `.env.local` and keep its values to use the GitMint OAuth app and hosted broker. The broker exchanges short-lived authorization codes and does not store or log access tokens. GitMint stores the returned token in macOS Keychain.
 
 ## Run your own OAuth app and broker
 
@@ -20,4 +20,4 @@ npx wrangler deploy
 
 Set `VITE_GITMINT_AUTH_BROKER_URL` to the deployed HTTPS worker URL. Update `GITHUB_CLIENT_ID` in `wrangler.toml` to match your OAuth app. Do not commit worker secrets or `.env.local`.
 
-The desktop app uses PKCE, a random state value, and a temporary loopback listener for sign-in. It requests GitHub's `read:user` and `repo` scopes. GitHub's classic `repo` scope allows write access to private repositories; GitMint currently uses the API to list repositories and display their links. Local repository changes use the Git CLI.
+The desktop app uses PKCE, a random state value, and a temporary loopback listener for sign-in. It requests GitHub's `read:user` and `repo` scopes. GitHub's classic `repo` scope allows write access to private repositories. GitMint uses that access for repository listing, HTTPS cloning, and push or pull operations explicitly started by the user. Local Git operations use the Git CLI and are scoped to the selected repository.

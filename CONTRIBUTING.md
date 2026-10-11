@@ -1,6 +1,6 @@
 # Contributing to GitMint
 
-Thanks for helping make everyday Git work clearer. GitMint is an early macOS beta, so focused bug fixes, usability improvements, and small, well-scoped features are especially helpful.
+Thanks for helping make everyday Git work clearer. Focused bug fixes, usability improvements, and small, well-scoped features are especially helpful.
 
 ## Before you start
 
@@ -18,7 +18,7 @@ cp .env.example .env.local
 npm run tauri:dev
 ```
 
-The checked-in example contains the public beta sign-in configuration. Keep custom credentials and secrets in `.env.local`; never commit them.
+The checked-in example contains the public sign-in configuration. Keep custom credentials and secrets in `.env.local`; never commit them.
 
 Before opening a pull request, run the checks relevant to your change:
 

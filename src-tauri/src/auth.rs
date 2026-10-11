@@ -374,7 +374,10 @@ fn read_token() -> Result<String, String> {
 }
 
 pub(crate) fn token_for_git() -> Result<String, String> {
-    read_token().map_err(|_| "Sign in with GitHub again to clone this repository.".to_string())
+    #[cfg(test)]
+    return Ok("gitmint-test-token".into());
+    #[cfg(not(test))]
+    read_token().map_err(|_| "Sign in with GitHub again to access this repository.".to_string())
 }
 
 fn cache_token(token: String) {

@@ -79,16 +79,22 @@ mod tests {
         fs,
         path::PathBuf,
         process::Command,
+        sync::atomic::{AtomicU64, Ordering},
         time::{SystemTime, UNIX_EPOCH},
     };
+
+    static TEMP_REPO_ID: AtomicU64 = AtomicU64::new(0);
 
     fn temp_repo() -> PathBuf {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let path =
-            std::env::temp_dir().join(format!("gitmint-branches-{}-{nonce}", std::process::id()));
+        let id = TEMP_REPO_ID.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!(
+            "gitmint-branches-{}-{nonce}-{id}",
+            std::process::id()
+        ));
         fs::create_dir_all(&path).unwrap();
         assert!(
             Command::new("git")
