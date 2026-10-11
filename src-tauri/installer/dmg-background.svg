@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="1000" viewBox="0 0 760 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#19221c"/>
+      <stop offset="1" stop-color="#101512"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8fcea0" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#8fcea0" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="760" height="500" fill="url(#bg)"/>
+  <circle cx="695" cy="34" r="206" fill="url(#glow)"/>
+  <path d="M632 92c39-44 77-57 119-58-1 48-25 84-66 91-17 3-35-8-38-25" fill="none" stroke="#9dd4a9" stroke-opacity=".10" stroke-width="2"/>
+  <path d="M649 116c26-31 56-56 88-77" fill="none" stroke="#9dd4a9" stroke-opacity=".08" stroke-width="2"/>
+
+  <rect x="48" y="42" width="48" height="48" rx="14" fill="#A9D9B4"/>
+  <path d="M59 77c-1-13 7-24 27-26 1 16-7 29-21 31-3 0-5-1-6-5Z" fill="#173522"/>
+  <path d="M60 78c7-9 13-15 22-22m-16 15-1-7m7 2 5-1" fill="none" stroke="#A9D9B4" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+  <text x="110" y="69" fill="#eaf2eb" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="21" font-weight="650" letter-spacing="-.4">GitMint</text>
+  <text x="111" y="87" fill="#82958a" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" letter-spacing="1.25">YOUR GIT WORKFLOW, REFRESHED.</text>
+  <path d="M48 117h664" stroke="#ffffff" stroke-opacity=".08"/>
+
+  <text x="48" y="171" fill="#edf4ee" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="26" font-weight="600" letter-spacing="-.5">A calmer home for your code.</text>
+  <text x="49" y="197" fill="#98a79c" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13">Move GitMint to Applications to install.</text>
+
+  <path d="M286 300h188" fill="none" stroke="#8fc99c" stroke-opacity=".82" stroke-width="2" stroke-dasharray="5 7" stroke-linecap="round"/>
+  <path d="m465 291 10 9-10 9" fill="none" stroke="#a9d9b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="316" y="265" width="128" height="23" rx="11.5" fill="#1d2c22" stroke="#3f6248" stroke-opacity=".85"/>
+  <text x="380" y="280" text-anchor="middle" fill="#b3dcbc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="8" font-weight="650" letter-spacing="1.15">DRAG TO INSTALL</text>
+
+  <path d="M48 397h664" stroke="#ffffff" stroke-opacity=".08"/>
+  <g transform="translate(0 -36)">
+    <circle cx="58" cy="462" r="10" fill="#26392c"/>
+    <path d="m54 462 3 3 5-6" fill="none" stroke="#a9d9b4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="77" y="466" fill="#9aa99e" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10">No setup wizard. Just drag, drop, and open GitMint.</text>
+    <text x="711" y="466" text-anchor="end" fill="#64756a" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" letter-spacing=".8">MACOS</text>
+  </g>
+</svg>
