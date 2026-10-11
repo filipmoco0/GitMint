@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">GitMint</title>
+  <rect width="64" height="64" rx="18" fill="#A9D9B4"/>
+  <defs>
+    <clipPath id="leaf"><path d="M14 48C12 29 24 13 51 10c1 23-10 40-29 43-4 1-7-1-8-5Z"/></clipPath>
+  </defs>
+  <path d="M14 48C12 29 24 13 51 10c1 23-10 40-29 43-4 1-7-1-8-5Z" fill="#173522"/>
+  <g clip-path="url(#leaf)" fill="none" stroke="#A9D9B4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7">
+    <path d="M17 49c8-11 16-19 27-27M25 39l-1-10m10 2 7-1m-16 13 8 1"/>
+  </g>
+</svg>
