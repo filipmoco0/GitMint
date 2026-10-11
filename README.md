@@ -4,7 +4,7 @@
 
 GitMint is a lightweight, open-source Git client for macOS. Browse GitHub repositories, open local projects, and handle everyday Git work in a focused desktop app.
 
-> **Public beta:** GitMint is early software. Back up important work and report problems through GitHub Issues once the public repository is available.
+> **Public beta:** GitMint is early software. Back up important work and report problems through [GitHub Issues](https://github.com/filipmoco0/GitMint/issues).
 
 ## What works
 
@@ -19,7 +19,7 @@ GitMint currently does **not** provide push, pull, pull request, or merge workfl
 
 ## Download
 
-The first beta is being prepared for GitHub Releases. For now, build the macOS installer from source using the steps below.
+Download the Apple silicon installer from the [0.1.0-beta.1 GitHub Release](https://github.com/filipmoco0/GitMint/releases/tag/v0.1.0-beta.1). This testing build is not signed with an Apple Developer ID, so macOS may show a warning when opening it. To build from source, follow the steps below.
 
 ## Build from source
 
