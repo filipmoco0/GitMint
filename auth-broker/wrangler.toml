@@ -1,0 +1,7 @@
+name = "gitmint-auth-broker"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+GITHUB_CLIENT_ID = "Ov23li0OVSHw89JRltSU"
+# Set GITHUB_CLIENT_SECRET with `wrangler secret put GITHUB_CLIENT_SECRET`.
