@@ -18,6 +18,17 @@ fi
 cd "$PROJECT_ROOT"
 npm run tauri:build
 mkdir -p "$OUTPUT_DIR"
+
+# Tauri's linker signature is not a complete bundle signature. Build-host
+# extended attributes can also make codesign reject the bundle as damaged.
+# Strip that metadata, ad-hoc sign the complete bundle, and verify the seal
+# before placing it in the downloadable DMG. A Developer ID is still needed
+# for notarization and a warning-free public macOS install.
+xattr -cr "$APP_PATH"
+BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Contents/Info.plist")"
+codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$APP_PATH"
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
 "$VENV_DIR/bin/dmgbuild" \
   -s "$PROJECT_ROOT/src-tauri/installer/dmgbuild_settings.py" \
   -D "app=$APP_PATH" \
