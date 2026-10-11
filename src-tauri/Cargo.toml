@@ -1,0 +1,33 @@
+[package]
+name = "app"
+version = "0.1.0-beta.1"
+description = "A lightweight Git client for macOS"
+authors = ["GitMint contributors"]
+license = "MIT"
+repository = ""
+edition = "2024"
+rust-version = "1.90"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.2", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.12.3", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-dialog = "2.8.2"
+tauri-plugin-opener = "2"
+base64 = "0.22"
+rand = "0.8"
+sha2 = "0.10"
+url = "2"
+keyring = { version = "3.6", features = ["apple-native"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
