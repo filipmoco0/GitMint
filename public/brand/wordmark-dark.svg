@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 88" role="img" aria-labelledby="title">
+  <title id="title">GitMint — Your Git workflow, refreshed.</title>
+  <rect x="4" y="8" width="72" height="72" rx="21" fill="#A9D9B4"/>
+  <defs><clipPath id="leaf"><path d="M20 61C18 40 31 22 61 19c1 25-11 44-32 47-4 1-8-1-9-5Z"/></clipPath></defs>
+  <path d="M20 61C18 40 31 22 61 19c1 25-11 44-32 47-4 1-8-1-9-5Z" fill="#173522"/>
+  <path clip-path="url(#leaf)" d="M23 62c10-13 19-21 29-30M32 51l-1-11m11 2 8-1M32 51l10 1" fill="none" stroke="#A9D9B4" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <text x="94" y="51" fill="#E9F3EB" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="37" font-weight="650" letter-spacing="-1.5">GitMint</text>
+  <text x="96" y="70" fill="#A3B5A8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" letter-spacing="1.4">YOUR GIT WORKFLOW, REFRESHED.</text>
+</svg>
