@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+
+- Search public GitHub repositories directly from GitMint, with paginated results.
+- Open a repository detail page with its description, default branch, and update date.
+- Render repository READMEs as readable Markdown, including tables, code blocks, and sanitized embedded HTML.
+- Resolve relative README images and links to their repository files.
+- Keep clone, copy URL, and open on GitHub actions available from repository details.
+
 ## 1.0.0
 
 First public release.

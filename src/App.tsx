@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import {
-  GitBranch, GitCommitHorizontal, FolderGit2, FolderOpen, ChevronDown, Download,
+  GitBranch, GitCommitHorizontal, FolderGit2, FolderOpen, ChevronDown, ChevronLeft, Download, Copy,
   History, Leaf, RefreshCw, Settings2, Sparkles, AlertCircle, FileCode2, ChevronRight, Plus, Minus,
   Search, LockKeyhole, ExternalLink, Library, ArrowDownToLine, ArrowUpFromLine,
 } from 'lucide-react'
@@ -17,6 +21,7 @@ type SelectedFile = { path: string; staged: boolean }
 type Branch = { name: string; current: boolean }
 type GithubUser = { login: string; avatarUrl: string; htmlUrl: string }
 type GithubRepository = { id: number; name: string; fullName: string; description: string | null; private: boolean; htmlUrl: string; cloneUrl: string; defaultBranch: string; updatedAt: string; fork: boolean }
+type GithubSearchResults = { items: GithubRepository[]; totalCount: number; page: number }
 const RECENTS_KEY = 'gitmint.recent-repositories'
 const LIBRARY_TAB_KEY = 'gitmint.default-library-tab'
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID ?? ''
@@ -26,6 +31,13 @@ function App() {
   const [githubUser, setGithubUser] = useState<GithubUser | null>(null)
   const [githubRepositories, setGithubRepositories] = useState<GithubRepository[]>([])
   const [githubRepositoriesLoading, setGithubRepositoriesLoading] = useState(false)
+  const [githubSearchResults, setGithubSearchResults] = useState<GithubSearchResults | null>(null)
+  const [githubSearchLoading, setGithubSearchLoading] = useState(false)
+  const [githubSearchFailed, setGithubSearchFailed] = useState(false)
+  const [selectedGithubRepository, setSelectedGithubRepository] = useState<GithubRepository | null>(null)
+  const [repositoryReadme, setRepositoryReadme] = useState<string | null>(null)
+  const [repositoryReadmeError, setRepositoryReadmeError] = useState('')
+  const [repositoryReadmeLoading, setRepositoryReadmeLoading] = useState(false)
   const [cloningRepository, setCloningRepository] = useState<number | null>(null)
   const [libraryTab, setLibraryTab] = useState<'github' | 'local'>(() => localStorage.getItem(LIBRARY_TAB_KEY) === 'local' ? 'local' : 'github')
   const [repositorySearch, setRepositorySearch] = useState('')
@@ -57,6 +69,8 @@ function App() {
   const [branches, setBranches] = useState<Branch[]>([])
   const [branchName, setBranchName] = useState('')
   const githubRepositoryRequest = useRef(0)
+  const githubSearchRequest = useRef(0)
+  const repositoryReadmeRequest = useRef(0)
   const openRepositoryRef = useRef<(path?: string) => Promise<void>>(async () => {})
 
   useEffect(() => { localStorage.setItem(RECENTS_KEY, JSON.stringify(recent)) }, [recent])
@@ -82,6 +96,18 @@ function App() {
   useEffect(() => {
     if (githubUser) void refreshGithubRepositories()
   }, [githubUser])
+  useEffect(() => {
+    const query = repositorySearch.trim()
+    if (libraryTab !== 'github' || query.length < 2) {
+      githubSearchRequest.current += 1
+      return
+    }
+    const timeout = window.setTimeout(() => { void searchGithubRepositories(query) }, 350)
+    return () => {
+      window.clearTimeout(timeout)
+      githubSearchRequest.current += 1
+    }
+  }, [libraryTab, repositorySearch])
   useEffect(() => {
     if (!repository) return
     let current = true
@@ -151,6 +177,70 @@ function App() {
       if (requestId === githubRepositoryRequest.current) setError(String(reason).replace(/^Error: /, ''))
     } finally {
       if (requestId === githubRepositoryRequest.current) setGithubRepositoriesLoading(false)
+    }
+  }
+
+  async function searchGithubRepositories(query: string, page = 1, append = false) {
+    const requestId = ++githubSearchRequest.current
+    setGithubSearchLoading(true)
+    if (!append) {
+      setError('')
+      setGithubSearchFailed(false)
+    }
+    try {
+      const results = await invoke<GithubSearchResults>('search_github_repositories', { query, page })
+      if (requestId === githubSearchRequest.current) {
+        setGithubSearchResults((current) => append && current ? { ...results, items: [...current.items, ...results.items] } : results)
+      }
+    } catch (reason) {
+      if (requestId === githubSearchRequest.current) {
+        setError(String(reason).replace(/^Error: /, ''))
+        if (!append) setGithubSearchFailed(true)
+      }
+    } finally {
+      if (requestId === githubSearchRequest.current) setGithubSearchLoading(false)
+    }
+  }
+
+  async function showGithubRepository(item: GithubRepository) {
+    setSelectedGithubRepository(item)
+    setRepositoryReadme(null)
+    setRepositoryReadmeError('')
+    setRepositoryReadmeLoading(true)
+    setError('')
+    const requestId = ++repositoryReadmeRequest.current
+    try {
+      const readme = await invoke<string | null>('get_github_repository_readme', { fullName: item.fullName })
+      if (requestId === repositoryReadmeRequest.current) setRepositoryReadme(readme)
+    } catch (reason) {
+      if (requestId === repositoryReadmeRequest.current) {
+        const message = String(reason).replace(/^Error: /, '')
+        setError(message)
+        setRepositoryReadmeError(message)
+      }
+    } finally {
+      if (requestId === repositoryReadmeRequest.current) setRepositoryReadmeLoading(false)
+    }
+  }
+
+  async function copyRepositoryUrl(url: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        const input = document.createElement('textarea')
+        input.value = url
+        input.style.position = 'fixed'
+        input.style.opacity = '0'
+        document.body.append(input)
+        input.select()
+        const copied = document.execCommand('copy')
+        input.remove()
+        if (!copied) throw new Error('Clipboard access is unavailable.')
+      }
+      setNotice('Repository URL copied')
+    } catch {
+      setError('Could not copy the repository URL. Please copy it from GitHub instead.')
     }
   }
 
@@ -312,6 +402,11 @@ function App() {
     }
   }
 
+  const globalSearchActive = libraryTab === 'github' && repositorySearch.trim().length >= 2
+  const displayedGithubRepositories = globalSearchActive
+    ? githubSearchResults?.items ?? []
+    : githubRepositories.filter((item) => `${item.fullName} ${item.description ?? ''}`.toLowerCase().includes(repositorySearch.toLowerCase()))
+
   useEffect(() => { openRepositoryRef.current = openRepository })
 
   async function signInWithGithub() {
@@ -327,10 +422,15 @@ function App() {
 
   async function signOut() {
     githubRepositoryRequest.current += 1
+    githubSearchRequest.current += 1
+    repositoryReadmeRequest.current += 1
     try { await invoke('sign_out_github') }
     catch (reason) { setError(String(reason)); return }
     setError('')
     setGithubUser(null)
+    setGithubSearchResults(null)
+    setSelectedGithubRepository(null)
+    setRepositoryReadme(null)
     setRepository(null)
     setCommits([])
     setChanges([])
@@ -380,7 +480,7 @@ function App() {
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="sidebar-footer"><button className={`nav-item ${activeView === 'settings' ? 'active' : 'muted'}`} onClick={() => setActiveView('settings')}><Settings2 size={16} /><span>Settings</span></button><span className="footer-mark">v1.0.0</span></div>
+          <div className="sidebar-footer"><button className={`nav-item ${activeView === 'settings' ? 'active' : 'muted'}`} onClick={() => setActiveView('settings')}><Settings2 size={16} /><span>Settings</span></button><span className="footer-mark">v1.1.0</span></div>
         </div>
       </aside>
 
@@ -406,23 +506,35 @@ function App() {
           <section className="settings-section"><div className="settings-section-title"><h2>Repository library</h2><p>Choose which repositories you see first when you open the library.</p></div><div className="settings-row settings-library-row"><div><strong>Open to</strong><span>You can switch sources anytime in Repositories.</span></div><div className="settings-choice" role="group" aria-label="Default repository library"><button type="button" className={libraryTab === 'github' ? 'selected' : ''} aria-pressed={libraryTab === 'github'} onClick={() => setLibraryTab('github')}><GithubMark size={14}/>GitHub</button><button type="button" className={libraryTab === 'local' ? 'selected' : ''} aria-pressed={libraryTab === 'local'} onClick={() => setLibraryTab('local')}><FolderGit2 size={14}/>On this Mac</button></div></div></section>
           <section className="settings-section"><div className="settings-section-title"><h2>GitHub account</h2><p>Signed in as {githubUser.login}. GitMint uses GitHub for repository browsing and sync actions you start.</p></div><div className="settings-row"><div className="settings-account"><img src={githubUser.avatarUrl} alt=""/><div><strong>{githubUser.login}</strong><span>Connected</span></div></div><button className="settings-action secondary" onClick={() => void signOut()}>Sign out</button></div></section>
           <section className="settings-section"><div className="settings-section-title"><h2>Recent repositories</h2><p>Clear GitMint’s remembered list. This never deletes repository files from your Mac.</p></div><div className="settings-row"><div><strong>{recent.length} {recent.length === 1 ? 'repository' : 'repositories'}</strong><span>Saved on this Mac</span></div><button className="settings-action" disabled={recent.length === 0} onClick={() => { if (window.confirm('Clear the recently opened repository list? Your repository files will not be deleted.')) { setRecent([]); setNotice('Recent repositories cleared') } }}>Clear list</button></div></section>
-        </div> : activeView === 'repositories' ? <div className="library-view">
+        </div> : activeView === 'repositories' && selectedGithubRepository ? <GithubRepositoryDetail
+          item={selectedGithubRepository}
+          readme={repositoryReadme}
+          readmeError={repositoryReadmeError}
+          loading={repositoryReadmeLoading}
+          cloning={cloningRepository === selectedGithubRepository.id}
+          onBack={() => { setSelectedGithubRepository(null); setRepositoryReadme(null) }}
+          onCopy={() => void copyRepositoryUrl(selectedGithubRepository.htmlUrl)}
+          onClone={() => void cloneGithubRepository(selectedGithubRepository)}
+          onOpen={() => void invoke('open_github_repository', { url: selectedGithubRepository.htmlUrl }).catch((reason: unknown) => setError(String(reason)))}
+        /> : activeView === 'repositories' ? <div className="library-view">
           <div className="repo-heading library-heading">
-            <div><div className="eyebrow"><span className="status-dot" /> YOUR WORKSPACE</div><h1>Repositories</h1><p className="repo-subtitle">Browse your GitHub repositories or open a project already on this Mac.</p></div>
+            <div><div className="eyebrow"><span className="status-dot" /> YOUR WORKSPACE</div><h1>Repositories</h1><p className="repo-subtitle">Browse your repositories, search GitHub, or open a project on this Mac.</p></div>
             <button className="primary-button library-add-button" onClick={() => { setLibraryTab('local'); void openRepository() }} disabled={busy}><FolderOpen size={15} />Add local repository</button>
           </div>
           <div className="library-toolbar">
             <div className="library-tabs" role="tablist" aria-label="Repository sources">
-              <button className={libraryTab === 'github' ? 'selected' : ''} onClick={() => setLibraryTab('github')}><GithubMark size={14} />GitHub <span>{githubRepositories.length}</span></button>
-              <button className={libraryTab === 'local' ? 'selected' : ''} onClick={() => setLibraryTab('local')}><FolderGit2 size={14} />On this Mac <span>{recent.length}</span></button>
+              <button className={libraryTab === 'github' ? 'selected' : ''} onClick={() => { setSelectedGithubRepository(null); if (libraryTab !== 'github') { setLibraryTab('github'); setGithubSearchResults(null); setGithubSearchLoading(false); setGithubSearchFailed(false) } }}><GithubMark size={14} />GitHub <span>{githubRepositories.length}</span></button>
+              <button className={libraryTab === 'local' ? 'selected' : ''} onClick={() => { setSelectedGithubRepository(null); if (libraryTab !== 'local') { setLibraryTab('local'); setGithubSearchResults(null); setGithubSearchLoading(false); setGithubSearchFailed(false) } }}><FolderGit2 size={14} />On this Mac <span>{recent.length}</span></button>
             </div>
-            <label className="repository-search"><Search size={14} /><input value={repositorySearch} onChange={(event) => setRepositorySearch(event.target.value)} placeholder={libraryTab === 'github' ? 'Find a GitHub repository' : 'Find a local repository'} aria-label="Search repositories" /></label>
+            <label className="repository-search"><Search size={14} /><input value={repositorySearch} onChange={(event) => { setRepositorySearch(event.target.value); setGithubSearchResults(null); setGithubSearchLoading(false); setGithubSearchFailed(false) }} placeholder={libraryTab === 'github' ? 'Search all GitHub repositories' : 'Find a local repository'} aria-label={libraryTab === 'github' ? 'Search all GitHub repositories' : 'Search local repositories'} /></label>
             {libraryTab === 'github' && <button className="icon-button library-refresh" aria-label="Refresh GitHub repositories" title="Refresh GitHub repositories" onClick={() => void refreshGithubRepositories()} disabled={githubRepositoriesLoading}><RefreshCw size={14} className={githubRepositoriesLoading ? 'spinning' : ''} /></button>}
           </div>
           {libraryTab === 'github' ? <div className="repository-catalog" aria-label="GitHub repositories">
-            {githubRepositoriesLoading && githubRepositories.length === 0 ? <div className="catalog-empty"><div className="auth-spinner" /><strong>Loading your GitHub repositories…</strong></div> : githubRepositories.filter((item) => `${item.fullName} ${item.description ?? ''}`.toLowerCase().includes(repositorySearch.toLowerCase())).length === 0 ? <div className="catalog-empty"><GithubMark size={23} /><strong>{repositorySearch ? 'No matching repositories' : 'No GitHub repositories yet'}</strong><span>{repositorySearch ? 'Try another name or description.' : 'Repositories you own or have access to will show up here.'}</span></div> : githubRepositories.filter((item) => `${item.fullName} ${item.description ?? ''}`.toLowerCase().includes(repositorySearch.toLowerCase())).map((item) => <div className="catalog-row" key={item.id}>
-              <div className="catalog-repo-icon"><FolderGit2 size={16} /></div><div className="catalog-repo-copy"><div className="catalog-repo-title"><strong>{item.fullName}</strong>{item.private && <span className="visibility-tag"><LockKeyhole size={10} />Private</span>}{item.fork && <span className="visibility-tag">Fork</span>}</div><p>{item.description || 'No description provided.'}</p><span className="catalog-repo-meta">Updated {formatDate(item.updatedAt)} <i>·</i> {item.defaultBranch}</span></div><div className="github-repo-actions"><button className="catalog-open-button" onClick={() => void cloneGithubRepository(item)} disabled={cloningRepository !== null}><Download size={13} />{cloningRepository === item.id ? 'Cloning…' : 'Clone & open'}</button><button className="icon-button" aria-label={`View ${item.fullName} on GitHub`} title="View on GitHub" onClick={() => void invoke('open_github_repository', { url: item.htmlUrl }).catch((reason: unknown) => setError(String(reason)))}><ExternalLink size={13} /></button></div>
-            </div>)}
+            {globalSearchActive ? githubSearchLoading || (!githubSearchResults && !githubSearchFailed) ? <div className="catalog-empty"><div className="auth-spinner" /><strong>Searching GitHub…</strong><span>Looking across public repositories.</span></div> : githubSearchFailed ? <div className="catalog-empty"><GithubMark size={23} /><strong>Search didn’t finish</strong><span>Check your connection and try again.</span><button className="load-more-button" onClick={() => void searchGithubRepositories(repositorySearch.trim())}>Try again</button></div> : displayedGithubRepositories.length === 0 ? <div className="catalog-empty"><GithubMark size={23} /><strong>No repositories found</strong><span>Try a different name, topic, or phrase.</span></div> : <>
+              <div className="catalog-search-summary">{githubSearchResults!.totalCount.toLocaleString()} repositories on GitHub match “{repositorySearch.trim()}”.</div>
+              {displayedGithubRepositories.map((item) => <GithubRepositoryRow key={item.id} item={item} cloning={cloningRepository === item.id} disabled={cloningRepository !== null} onDetails={() => void showGithubRepository(item)} onClone={() => void cloneGithubRepository(item)} onCopy={() => void copyRepositoryUrl(item.htmlUrl)} onOpen={() => void invoke('open_github_repository', { url: item.htmlUrl }).catch((reason: unknown) => setError(String(reason)))} />)}
+              {githubSearchResults!.items.length < githubSearchResults!.totalCount && githubSearchResults!.page < 20 && <button className="load-more-button" onClick={() => void searchGithubRepositories(repositorySearch.trim(), githubSearchResults!.page + 1, true)} disabled={githubSearchLoading}>{githubSearchLoading ? 'Loading…' : 'Load more results'}</button>}
+            </> : githubRepositoriesLoading && githubRepositories.length === 0 ? <div className="catalog-empty"><div className="auth-spinner" /><strong>Loading your GitHub repositories…</strong></div> : displayedGithubRepositories.length === 0 ? <div className="catalog-empty"><GithubMark size={23} /><strong>{repositorySearch ? 'No matching repositories' : 'No GitHub repositories yet'}</strong><span>{repositorySearch ? 'Enter at least 2 characters to search all of GitHub.' : 'Repositories you own or have access to will show up here. Search above to discover public repositories.'}</span></div> : displayedGithubRepositories.map((item) => <GithubRepositoryRow key={item.id} item={item} cloning={cloningRepository === item.id} disabled={cloningRepository !== null} onDetails={() => void showGithubRepository(item)} onClone={() => void cloneGithubRepository(item)} onCopy={() => void copyRepositoryUrl(item.htmlUrl)} onOpen={() => void invoke('open_github_repository', { url: item.htmlUrl }).catch((reason: unknown) => setError(String(reason)))} />)}
           </div> : <div className="repository-catalog" aria-label="Local repositories">
             {recent.filter((item) => `${item.name} ${item.path}`.toLowerCase().includes(repositorySearch.toLowerCase())).length === 0 ? <div className="catalog-empty"><FolderOpen size={23} /><strong>{repositorySearch ? 'No matching repositories' : 'No local repositories added'}</strong><span>{repositorySearch ? 'Try another name or path.' : 'Add a Git repository from your Mac to see it in your library.'}</span><button className="primary-button" onClick={() => void openRepository()} disabled={busy}><FolderOpen size={15} />Choose a repository</button></div> : recent.filter((item) => `${item.name} ${item.path}`.toLowerCase().includes(repositorySearch.toLowerCase())).map((item) => <button className={`catalog-row local-catalog-row ${repository?.path === item.path ? 'current' : ''}`} key={item.path} onClick={() => void openRepository(item.path)}>
               <div className="catalog-repo-icon"><FolderGit2 size={16} /></div><div className="catalog-repo-copy"><div className="catalog-repo-title"><strong>{item.name}</strong>{repository?.path === item.path && <span className="visibility-tag">Open</span>}</div><p className="local-repo-path">{item.path}</p><span className="catalog-repo-meta">Branch: {item.branch}</span></div><span className="local-open-label">Open <ChevronRight size={14} /></span>
@@ -496,6 +608,77 @@ function ChangeGroup({ title, files, staged, selected, busy, onSelect, onAction 
       </div>
     }) : <div className="change-group-empty">No files</div>}
   </div>
+}
+
+function GithubRepositoryRow({ item, cloning, disabled, onDetails, onClone, onCopy, onOpen }: {
+  item: GithubRepository
+  cloning: boolean
+  disabled: boolean
+  onDetails: () => void
+  onClone: () => void
+  onCopy: () => void
+  onOpen: () => void
+}) {
+  return <div className="catalog-row github-catalog-row">
+    <div className="catalog-repo-icon"><FolderGit2 size={16} /></div>
+    <button className="catalog-repo-copy catalog-details-link" onClick={onDetails} aria-label={`View details for ${item.fullName}`}>
+      <span className="catalog-repo-title"><strong>{item.fullName}</strong>{item.private && <span className="visibility-tag"><LockKeyhole size={10} />Private</span>}{item.fork && <span className="visibility-tag">Fork</span>}</span>
+      <span className="catalog-description">{item.description || 'No description provided.'}</span>
+      <span className="catalog-repo-meta">Updated {formatDate(item.updatedAt)} <i>·</i> {item.defaultBranch}</span>
+    </button>
+    <div className="github-repo-actions">
+      <button className="catalog-open-button" onClick={onClone} disabled={disabled}>{cloning ? <RefreshCw size={13} className="spinning" /> : <Download size={13} />}{cloning ? 'Cloning…' : 'Clone & open'}</button>
+      <button className="icon-button" aria-label={`Copy URL for ${item.fullName}`} title="Copy repository URL" onClick={onCopy}><Copy size={13} /></button>
+      <button className="icon-button" aria-label={`Open ${item.fullName} on GitHub`} title="Open on GitHub" onClick={onOpen}><ExternalLink size={13} /></button>
+    </div>
+  </div>
+}
+
+function GithubRepositoryDetail({ item, readme, readmeError, loading, cloning, onBack, onCopy, onClone, onOpen }: {
+  item: GithubRepository
+  readme: string | null
+  readmeError: string
+  loading: boolean
+  cloning: boolean
+  onBack: () => void
+  onCopy: () => void
+  onClone: () => void
+  onOpen: () => void
+}) {
+  return <div className="library-view github-detail-view">
+    <button className="detail-back-button" onClick={onBack}><ChevronLeft size={15} />Back to repositories</button>
+    <div className="github-detail-heading">
+      <div className="github-detail-title"><div className="catalog-repo-icon"><FolderGit2 size={18} /></div><div><div className="catalog-repo-title"><h1>{item.fullName}</h1>{item.private && <span className="visibility-tag"><LockKeyhole size={10} />Private</span>}{item.fork && <span className="visibility-tag">Fork</span>}</div><p>{item.description || 'No description provided.'}</p></div></div>
+      <div className="github-detail-actions">
+        <button className="catalog-open-button" onClick={onClone} disabled={cloning}>{cloning ? <RefreshCw size={13} className="spinning" /> : <Download size={13} />}{cloning ? 'Cloning…' : 'Clone & open'}</button>
+        <button className="detail-action-button" onClick={onCopy}><Copy size={13} />Copy URL</button>
+        <button className="detail-action-button" onClick={onOpen}><ExternalLink size={13} />Open on GitHub</button>
+      </div>
+    </div>
+    <div className="github-detail-meta"><span>Default branch <strong>{item.defaultBranch}</strong></span><span>Updated <strong>{formatDate(item.updatedAt)}</strong></span></div>
+    <section className="readme-panel" aria-label={`${item.fullName} README`}>
+      <div className="readme-panel-heading"><strong>README.md</strong><span>{item.fullName}</span></div>
+      {loading ? <div className="readme-state"><div className="auth-spinner" /><span>Loading README…</span></div> : readme ? <article className="readme-content">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw, [rehypeSanitize, { ...defaultSchema, tagNames: [...(defaultSchema.tagNames ?? []), 'picture', 'source'], attributes: { ...defaultSchema.attributes, '*': [...(defaultSchema.attributes?.['*'] ?? []), 'align'], picture: [], source: ['media', 'srcSet', 'type'] } }] as never]}
+          urlTransform={(url, key) => githubReadmeUrl(url, key, item)}
+          components={{ a: ({ ...props }) => <a {...props} target="_blank" rel="noreferrer" /> }}
+        >{readme}</ReactMarkdown>
+      </article> : readmeError ? <div className="readme-state"><strong>Couldn’t load the README</strong><span>{readmeError}</span></div> : <div className="readme-state"><strong>No README found</strong><span>This repository doesn’t include a README file.</span></div>}
+    </section>
+  </div>
+}
+
+function githubReadmeUrl(url: string, key: string, item: GithubRepository) {
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(url)) return url
+  const [path, suffix = ''] = url.split(/(?=[?#])/, 2)
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+  const branch = encodeURIComponent(item.defaultBranch)
+  const base = key === 'src' || key === 'srcSet'
+    ? `https://raw.githubusercontent.com/${item.fullName}/${branch}/${encodedPath}`
+    : `https://github.com/${item.fullName}/blob/${branch}/${encodedPath}`
+  return `${base}${suffix}`
 }
 
 function Brand() {

@@ -37,6 +37,8 @@ pub fn run() {
             auth::github_session,
             auth::sign_out_github,
             auth::list_github_repositories,
+            auth::search_github_repositories,
+            auth::get_github_repository_readme,
             auth::open_github_repository,
             repository::inspect_repository,
             repository::clone_github_repository,

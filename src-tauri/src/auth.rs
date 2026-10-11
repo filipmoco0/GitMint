@@ -1,4 +1,7 @@
-use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use base64::{
+    Engine,
+    engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+};
 use rand::{RngCore, rngs::OsRng};
 use reqwest::header::{ACCEPT, USER_AGENT};
 use serde::{Deserialize, Serialize};
@@ -38,6 +41,14 @@ pub struct GithubRepository {
     pub default_branch: String,
     pub updated_at: String,
     pub fork: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GithubRepositorySearch {
+    pub items: Vec<GithubRepository>,
+    pub total_count: usize,
+    pub page: u32,
 }
 
 #[derive(Deserialize)]
@@ -219,6 +230,123 @@ pub async fn list_github_repositories() -> Result<Vec<GithubRepository>, String>
         }
     }
     Ok(repositories)
+}
+
+#[tauri::command]
+pub async fn search_github_repositories(
+    query: String,
+    page: Option<u32>,
+) -> Result<GithubRepositorySearch, String> {
+    let token =
+        read_token().map_err(|_| "Sign in with GitHub to search repositories.".to_string())?;
+    let query = query.trim();
+    if query.chars().count() < 2 {
+        return Err("Enter at least 2 characters to search GitHub.".into());
+    }
+    let page = page.unwrap_or(1).clamp(1, 20);
+    let response = reqwest::Client::new()
+        .get("https://api.github.com/search/repositories")
+        .query(&[
+            ("q", query),
+            ("sort", "updated"),
+            ("order", "desc"),
+            ("per_page", "50"),
+        ])
+        .query(&[("page", page)])
+        .header(ACCEPT, "application/vnd.github+json")
+        .header(USER_AGENT, "GitMint")
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|_| {
+            "Could not reach GitHub. Check your internet connection and try again.".to_string()
+        })?;
+    if response.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(
+            "GitHub search is temporarily rate limited. Please wait a moment and try again.".into(),
+        );
+    }
+    let result: GithubSearchResponse = response
+        .error_for_status()
+        .map_err(|_| {
+            "GitHub could not search repositories. Please try a different search.".to_string()
+        })?
+        .json()
+        .await
+        .map_err(|_| "GitHub returned an invalid search result.".to_string())?;
+    Ok(GithubRepositorySearch {
+        items: result
+            .items
+            .into_iter()
+            .map(GithubRepository::from)
+            .collect(),
+        total_count: result.total_count,
+        page,
+    })
+}
+
+#[derive(Deserialize)]
+struct GithubSearchResponse {
+    total_count: usize,
+    items: Vec<GithubRepositoryResponse>,
+}
+
+#[derive(Deserialize)]
+struct GithubReadmeResponse {
+    content: String,
+    encoding: String,
+}
+
+#[tauri::command]
+pub async fn get_github_repository_readme(full_name: String) -> Result<Option<String>, String> {
+    let token =
+        read_token().map_err(|_| "Sign in with GitHub to view repository details.".to_string())?;
+    let Some((owner, name)) = full_name.split_once('/') else {
+        return Err("That GitHub repository name is invalid.".into());
+    };
+    let valid_segment = |segment: &str| {
+        !segment.is_empty()
+            && segment
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+    };
+    if !valid_segment(owner) || !valid_segment(name) {
+        return Err("That GitHub repository name is invalid.".into());
+    }
+    let response = reqwest::Client::new()
+        .get(format!(
+            "https://api.github.com/repos/{owner}/{name}/readme"
+        ))
+        .header(ACCEPT, "application/vnd.github+json")
+        .header(USER_AGENT, "GitMint")
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|_| {
+            "Could not reach GitHub. Check your internet connection and try again.".to_string()
+        })?;
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(None);
+    }
+    let readme: GithubReadmeResponse = response
+        .error_for_status()
+        .map_err(|_| "GitHub could not load this repository's README.".to_string())?
+        .json()
+        .await
+        .map_err(|_| "GitHub returned an invalid README.".to_string())?;
+    if readme.encoding == "base64" {
+        let encoded: String = readme
+            .content
+            .chars()
+            .filter(|character| !character.is_whitespace())
+            .collect();
+        let bytes = STANDARD
+            .decode(encoded)
+            .map_err(|_| "GitHub returned an unreadable README.".to_string())?;
+        Ok(Some(String::from_utf8_lossy(&bytes).into_owned()))
+    } else {
+        Ok(Some(readme.content))
+    }
 }
 
 #[cfg(test)]

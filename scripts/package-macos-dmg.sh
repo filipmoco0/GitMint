@@ -25,6 +25,9 @@ mkdir -p "$OUTPUT_DIR"
 # before placing it in the downloadable DMG. A Developer ID is still needed
 # for notarization and a warning-free public macOS install.
 xattr -cr "$APP_PATH"
+# Finder can reattach this bundle-level attribute between builds, and codesign
+# rejects it even after the recursive cleanup above.
+xattr -d com.apple.FinderInfo "$APP_PATH" 2>/dev/null || true
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Contents/Info.plist")"
 codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"

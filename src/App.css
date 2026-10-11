@@ -127,6 +127,14 @@
 .repository-catalog { flex: 1; min-height: 0; overflow: auto; }
 .catalog-row { min-height: 80px; width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 12px; color: inherit; background: transparent; border: 0; border-bottom: 1px solid #282f2a; text-align: left; }
 .catalog-row:hover { background: #1b221e; }
+.github-catalog-row { gap: 10px; }
+.catalog-details-link { min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: stretch; padding: 0; overflow: hidden; color: inherit; background: transparent; border: 0; text-align: left; cursor: pointer; }
+.catalog-details-link:hover .catalog-repo-title strong { color: #b8dfc0; }
+.catalog-description { display: block; margin: 4px 0 5px; overflow: hidden; color: #87928a; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.catalog-search-summary { position: sticky; top: 0; z-index: 1; padding: 9px 12px; color: #7f8b83; background: #171c19; border-bottom: 1px solid #282f2a; font-size: 9px; }
+.load-more-button { min-height: 34px; display: block; margin: 14px auto 20px; padding: 0 14px; color: #b6d9be; background: #26332a; border: 1px solid #3a4a3d; border-radius: 5px; font-size: 10px; cursor: pointer; }
+.load-more-button:hover:not(:disabled) { background: #304034; }
+.load-more-button:disabled { opacity: .6; cursor: wait; }
 .catalog-repo-icon { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; color: #a3d1ac; background: #232d26; border: 1px solid #344238; border-radius: 8px; }
 .catalog-repo-copy { min-width: 0; flex: 1; }
 .catalog-repo-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -139,6 +147,44 @@
 .catalog-open-button:hover { background: #304034; }
 .github-repo-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .github-repo-actions .icon-button { width: 28px; height: 28px; }
+.github-detail-view { gap: 14px; }
+.detail-back-button { align-self: flex-start; min-height: 28px; display: flex; align-items: center; gap: 3px; padding: 0 5px; color: #94a198; background: transparent; border: 0; font-size: 10px; cursor: pointer; }
+.detail-back-button:hover { color: #c4dfca; }
+.github-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 5px 0 17px; border-bottom: 1px solid #2a302c; }
+.github-detail-title { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.github-detail-title > div:last-child { min-width: 0; }
+.github-detail-title h1 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #e7ece8; font-size: 22px; font-weight: 560; letter-spacing: -.45px; }
+.github-detail-title p { margin: 6px 0 0; color: #89958d; font-size: 11px; line-height: 1.5; }
+.github-detail-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+.detail-action-button { min-height: 29px; display: flex; align-items: center; gap: 6px; padding: 0 9px; color: #b4c2b8; background: #222925; border: 1px solid #37413a; border-radius: 5px; font-size: 9px; cursor: pointer; }
+.detail-action-button:hover { color: #d4e2d7; background: #2a332d; }
+.github-detail-meta { display: flex; align-items: center; gap: 18px; color: #7e8a82; font-size: 9px; }
+.github-detail-meta strong { margin-left: 4px; color: #bac7bd; font-weight: 550; }
+.readme-panel { min-height: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #191f1b; border: 1px solid #2c342e; border-radius: 7px; }
+.readme-panel-heading { min-height: 38px; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; color: #c9d4cc; border-bottom: 1px solid #2c342e; font-size: 10px; }
+.readme-panel-heading span { min-width: 0; overflow: hidden; color: #758178; text-overflow: ellipsis; white-space: nowrap; font: 9px ui-monospace, SFMono-Regular, monospace; }
+.readme-content { flex: 1; overflow: auto; margin: 0; padding: 24px clamp(20px, 5vw, 64px) 36px; color: #c4cec7; overflow-wrap: anywhere; font: 13px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.readme-content > :first-child { margin-top: 0; }
+.readme-content h1, .readme-content h2, .readme-content h3, .readme-content h4 { color: #e4ebe6; line-height: 1.3; letter-spacing: -.02em; }
+.readme-content h1 { margin: 28px 0 16px; padding-bottom: 10px; border-bottom: 1px solid #303a33; font-size: 27px; }
+.readme-content h2 { margin: 26px 0 12px; padding-bottom: 7px; border-bottom: 1px solid #303a33; font-size: 21px; }
+.readme-content h3 { margin: 22px 0 9px; font-size: 17px; }
+.readme-content p { margin: 12px 0; }
+.readme-content a { color: #a8d7b2; text-decoration: underline; text-underline-offset: 2px; }
+.readme-content img { max-width: 100%; height: auto; }
+.readme-content picture { display: block; max-width: 100%; }
+.readme-content ul, .readme-content ol { padding-left: 24px; }
+.readme-content li { margin: 4px 0; }
+.readme-content blockquote { margin: 16px 0; padding: 2px 0 2px 14px; color: #98a69c; border-left: 3px solid #4c6853; }
+.readme-content pre { overflow: auto; padding: 13px 15px; color: #d0dbd3; background: #121714; border: 1px solid #2b342e; border-radius: 6px; font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.readme-content :not(pre) > code { padding: 2px 5px; color: #c9e2ce; background: #252d28; border-radius: 3px; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.readme-content table { display: block; max-width: 100%; overflow: auto; border-collapse: collapse; }
+.readme-content th, .readme-content td { padding: 7px 10px; border: 1px solid #343e37; text-align: left; }
+.readme-content th { color: #e0e8e2; background: #222a24; }
+.readme-content hr { border: 0; border-top: 1px solid #303a33; }
+.readme-state { min-height: 180px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; color: #87938a; text-align: center; font-size: 10px; }
+.readme-state strong { color: #d3ddd5; font-size: 12px; font-weight: 550; }
+.readme-state .auth-spinner { margin: 0 0 3px; }
 .catalog-empty { min-height: 260px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 9px; color: #7d8981; text-align: center; font-size: 10px; }
 .catalog-empty > svg { color: #91bd9b; }
 .catalog-empty strong { color: #d3ddd5; font-size: 12px; font-weight: 550; }
