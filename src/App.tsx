@@ -26,6 +26,8 @@ const RECENTS_KEY = 'gitmint.recent-repositories'
 const LIBRARY_TAB_KEY = 'gitmint.default-library-tab'
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID ?? ''
 const AUTH_BROKER_URL = import.meta.env.VITE_GITMINT_AUTH_BROKER_URL ?? ''
+const APP_VERSION = '1.1.1'
+const UPDATE_DISMISSED_KEY = 'gitmint.dismissed-update'
 
 function App() {
   const [githubUser, setGithubUser] = useState<GithubUser | null>(null)
@@ -66,12 +68,43 @@ function App() {
   const [syncBusy, setSyncBusy] = useState(false)
   const [commitMessage, setCommitMessage] = useState('')
   const [notice, setNotice] = useState('')
+  const [availableUpdate, setAvailableUpdate] = useState<{ version: string; url: string } | null>(null)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
+  const [updateCheckMessage, setUpdateCheckMessage] = useState('')
   const [branches, setBranches] = useState<Branch[]>([])
   const [branchName, setBranchName] = useState('')
   const githubRepositoryRequest = useRef(0)
   const githubSearchRequest = useRef(0)
   const repositoryReadmeRequest = useRef(0)
   const openRepositoryRef = useRef<(path?: string) => Promise<void>>(async () => {})
+
+  const checkForUpdates = async () => {
+    setCheckingUpdate(true)
+    setUpdateCheckMessage('')
+    try {
+      const release = await fetch('https://api.github.com/repos/filipmoco0/GitMint/releases/latest', { headers: { Accept: 'application/vnd.github+json' } }).then((response) => {
+        if (!response.ok) throw new Error('Could not check GitHub Releases right now.')
+        return response.json() as Promise<{ tag_name?: string; html_url?: string; draft?: boolean; prerelease?: boolean }>
+      })
+      const latest = (release.tag_name ?? '').replace(/^v/, '')
+      const currentParts = APP_VERSION.split('.').map(Number)
+      const latestParts = latest.split('.').map(Number)
+      const isNewer = latestParts.some((part, index) => part > (currentParts[index] ?? 0) && latestParts.slice(0, index).every((previous, previousIndex) => previous === (currentParts[previousIndex] ?? 0)))
+      if (!release.draft && !release.prerelease && isNewer && release.html_url) {
+        setAvailableUpdate({ version: latest, url: release.html_url })
+        setUpdateCheckMessage(`Version ${latest} is available.`)
+      } else {
+        setAvailableUpdate(null)
+        setUpdateCheckMessage('You’re up to date.')
+      }
+    } catch (reason) {
+      setUpdateCheckMessage(reason instanceof Error ? reason.message : 'Could not check for updates.')
+    } finally {
+      setCheckingUpdate(false)
+    }
+  }
+
+  useEffect(() => { void checkForUpdates() }, [])
 
   useEffect(() => { localStorage.setItem(RECENTS_KEY, JSON.stringify(recent)) }, [recent])
   useEffect(() => { localStorage.setItem(LIBRARY_TAB_KEY, libraryTab) }, [libraryTab])
@@ -457,7 +490,6 @@ function App() {
         <div className="brand-row">
           <div className="brand-mark"><img src="/gitmint.svg" alt="" /></div>
           <span className="brand-name">GitMint</span>
-          <span className="brand-version">1.0</span>
         </div>
 
         <div className="repo-picker">
@@ -480,7 +512,7 @@ function App() {
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="sidebar-footer"><button className={`nav-item ${activeView === 'settings' ? 'active' : 'muted'}`} onClick={() => setActiveView('settings')}><Settings2 size={16} /><span>Settings</span></button><span className="footer-mark">v1.1.0</span></div>
+          <div className="sidebar-footer"><button className={`nav-item ${activeView === 'settings' ? 'active' : 'muted'}`} onClick={() => setActiveView('settings')}><Settings2 size={16} /><span>Settings</span></button><span className="footer-mark">v{APP_VERSION}</span></div>
         </div>
       </aside>
 
@@ -500,10 +532,12 @@ function App() {
 
         {error && <div className="error-banner" role="alert"><AlertCircle size={16} /><span>{error}</span><button onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
         {notice && <div className="success-banner" role="status"><span className="success-mark">✓</span><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss">×</button></div>}
+        {availableUpdate && localStorage.getItem(UPDATE_DISMISSED_KEY) !== availableUpdate.version && <div className="update-banner" role="status"><span><strong>GitMint {availableUpdate.version} is ready</strong><small>There’s a newer version available.</small></span><button onClick={() => void invoke('open_github_repository', { url: availableUpdate.url })}>View update</button><button className="update-dismiss" aria-label="Dismiss update" onClick={() => { localStorage.setItem(UPDATE_DISMISSED_KEY, availableUpdate.version); setAvailableUpdate(null) }}>×</button></div>}
 
         {activeView === 'settings' ? <div className="settings-view">
           <div className="repo-heading"><div><div className="eyebrow"><span className="status-dot" /> PREFERENCES</div><h1>Settings</h1><p className="repo-subtitle">Choose how your repository library opens.</p></div></div>
           <section className="settings-section"><div className="settings-section-title"><h2>Repository library</h2><p>Choose which repositories you see first when you open the library.</p></div><div className="settings-row settings-library-row"><div><strong>Open to</strong><span>You can switch sources anytime in Repositories.</span></div><div className="settings-choice" role="group" aria-label="Default repository library"><button type="button" className={libraryTab === 'github' ? 'selected' : ''} aria-pressed={libraryTab === 'github'} onClick={() => setLibraryTab('github')}><GithubMark size={14}/>GitHub</button><button type="button" className={libraryTab === 'local' ? 'selected' : ''} aria-pressed={libraryTab === 'local'} onClick={() => setLibraryTab('local')}><FolderGit2 size={14}/>On this Mac</button></div></div></section>
+          <section className="settings-section"><div className="settings-section-title"><h2>Updates</h2><p>GitMint checks GitHub Releases when it opens. Updates are downloaded from the official release page.</p></div><div className="settings-row"><div><strong>Current version {APP_VERSION}</strong><span>{updateCheckMessage || 'Checks the latest stable release.'}</span></div><button className="settings-action" onClick={() => void checkForUpdates()} disabled={checkingUpdate}>{checkingUpdate ? 'Checking…' : 'Check now'}</button></div></section>
           <section className="settings-section"><div className="settings-section-title"><h2>GitHub account</h2><p>Signed in as {githubUser.login}. GitMint uses GitHub for repository browsing and sync actions you start.</p></div><div className="settings-row"><div className="settings-account"><img src={githubUser.avatarUrl} alt=""/><div><strong>{githubUser.login}</strong><span>Connected</span></div></div><button className="settings-action secondary" onClick={() => void signOut()}>Sign out</button></div></section>
           <section className="settings-section"><div className="settings-section-title"><h2>Recent repositories</h2><p>Clear GitMint’s remembered list. This never deletes repository files from your Mac.</p></div><div className="settings-row"><div><strong>{recent.length} {recent.length === 1 ? 'repository' : 'repositories'}</strong><span>Saved on this Mac</span></div><button className="settings-action" disabled={recent.length === 0} onClick={() => { if (window.confirm('Clear the recently opened repository list? Your repository files will not be deleted.')) { setRecent([]); setNotice('Recent repositories cleared') } }}>Clear list</button></div></section>
         </div> : activeView === 'repositories' && selectedGithubRepository ? <GithubRepositoryDetail

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- Check GitHub Releases for newer stable versions when GitMint opens.
+- Show a dismissible in-app banner with a link to the latest release.
+- Add a manual update check in Settings.
+- Remove the small version badge beside the GitMint brand.
+
 ## 1.1.0
 
 - Search public GitHub repositories directly from GitMint, with paginated results.
