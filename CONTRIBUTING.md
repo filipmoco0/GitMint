@@ -10,7 +10,7 @@ Thanks for helping make everyday Git work clearer. Focused bug fixes, usability 
 
 ## Work locally
 
-GitMint uses Rust, Tauri 2, React, TypeScript, and Vite. You will need macOS, Git, Node.js, Rust, and Xcode Command Line Tools.
+GitMint uses Rust, Tauri 2, React, TypeScript, and Vite. You will need Git, Node.js, and Rust. Install the native prerequisites for your build platform from the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/): Xcode Command Line Tools on macOS, Microsoft C++ Build Tools on Windows, and GTK/WebKitGTK 4.1 development libraries on Linux.
 
 ```sh
 npm install
@@ -30,7 +30,7 @@ cd src-tauri && cargo check
 
 ## Project principles
 
-- Keep the app focused on everyday repository work and macOS quality.
+- Keep the app focused on everyday repository work and a consistent experience across desktop platforms.
 - Run Git with process arguments, scoped to the selected repository.
 - Preserve user changes; never reset or force-switch branches silently.
 - Prefer simple, typed Tauri commands and reusable UI components.

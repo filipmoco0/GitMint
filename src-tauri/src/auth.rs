@@ -525,7 +525,7 @@ fn clear_token() -> Result<(), String> {
             Ok(())
         }
         Err(error) => Err(format!(
-            "Could not remove GitHub sign-in from Keychain: {error}"
+            "Could not remove the saved GitHub sign-in: {error}"
         )),
     }
 }

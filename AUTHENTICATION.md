@@ -4,7 +4,7 @@ GitMint requires GitHub sign-in for repository browsing, cloning, and GitHub syn
 
 ## Use the GitMint configuration
 
-Copy `.env.example` to `.env.local` and keep its values to use the GitMint OAuth app and hosted broker. The broker exchanges short-lived authorization codes and does not store or log access tokens. GitMint stores the returned token in macOS Keychain.
+Copy `.env.example` to `.env.local` and keep its values to use the GitMint OAuth app and hosted broker. The broker exchanges short-lived authorization codes and does not store or log access tokens. GitMint stores the returned token in the operating system credential store: Keychain on macOS, Windows Credential Manager on Windows, and Secret Service on Linux. Linux sign-in requires a compatible desktop keyring such as GNOME Keyring or KWallet to be running and unlocked.
 
 ## Run your own OAuth app and broker
 
