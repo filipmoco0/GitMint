@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 13045)
-Total output lines: 739
-
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
@@ -528,7 +525,21 @@ function App() {
               <button className="sync-button" onClick={() => void syncRepository('pull')} disabled={syncBusy || busy || operationBusy} title="Pull fast-forward changes from GitHub"><ArrowDownToLine size={13} />Pull</button>
               <button className="sync-button" onClick={() => void syncRepository('push')} disabled={syncBusy || busy || operationBusy} title="Push this branch to GitHub"><ArrowUpFromLine size={13} />Push</button>
             </div>}
-            {activeView !== 'repositories' && active…1045 tokens truncated…={() => { if (window.confirm('Clear the recently opened repository list? Your repository files will not be deleted.')) { setRecent([]); setNotice('Recent repositories cleared') } }}>Clear list</button></div></section>
+            {activeView !== 'repositories' && activeView !== 'settings' && <button className="icon-button" aria-label="Refresh repository" title="Refresh repository" onClick={() => repository && openRepository(repository.path)} disabled={!repository || busy}><RefreshCw size={15} className={busy ? 'spinning' : ''} /></button>}
+            {githubUser && <button className="user-chip" onClick={() => void signOut()} title="Sign out of GitHub"><img src={githubUser.avatarUrl} alt="" /><span>{githubUser.login}</span><span className="signout-label">Sign out</span></button>}
+          </div>
+        </header>
+
+        {error && <div className="error-banner" role="alert"><AlertCircle size={16} /><span>{error}</span><button onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
+        {notice && <div className="success-banner" role="status"><span className="success-mark">✓</span><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss">×</button></div>}
+        {availableUpdate && localStorage.getItem(UPDATE_DISMISSED_KEY) !== availableUpdate.version && <div className="update-banner" role="status"><span><strong>GitMint {availableUpdate.version} is ready</strong><small>There’s a newer version available.</small></span><button onClick={() => void invoke('open_github_repository', { url: availableUpdate.url })}>View update</button><button className="update-dismiss" aria-label="Dismiss update" onClick={() => { localStorage.setItem(UPDATE_DISMISSED_KEY, availableUpdate.version); setAvailableUpdate(null) }}>×</button></div>}
+
+        {activeView === 'settings' ? <div className="settings-view">
+          <div className="repo-heading"><div><div className="eyebrow"><span className="status-dot" /> PREFERENCES</div><h1>Settings</h1><p className="repo-subtitle">Choose how your repository library opens.</p></div></div>
+          <section className="settings-section"><div className="settings-section-title"><h2>Repository library</h2><p>Choose which repositories you see first when you open the library.</p></div><div className="settings-row settings-library-row"><div><strong>Open to</strong><span>You can switch sources anytime in Repositories.</span></div><div className="settings-choice" role="group" aria-label="Default repository library"><button type="button" className={libraryTab === 'github' ? 'selected' : ''} aria-pressed={libraryTab === 'github'} onClick={() => setLibraryTab('github')}><GithubMark size={14}/>GitHub</button><button type="button" className={libraryTab === 'local' ? 'selected' : ''} aria-pressed={libraryTab === 'local'} onClick={() => setLibraryTab('local')}><FolderGit2 size={14}/>On this computer</button></div></div></section>
+          <section className="settings-section"><div className="settings-section-title"><h2>Updates</h2><p>GitMint checks GitHub Releases when it opens. Updates are downloaded from the official release page.</p></div><div className="settings-row"><div><strong>Current version {APP_VERSION}</strong><span>{updateCheckMessage || 'Checks the latest stable release.'}</span></div><button className="settings-action" onClick={() => void checkForUpdates()} disabled={checkingUpdate}>{checkingUpdate ? 'Checking…' : 'Check now'}</button></div></section>
+          <section className="settings-section"><div className="settings-section-title"><h2>GitHub account</h2><p>Signed in as {githubUser.login}. GitMint uses GitHub for repository browsing and sync actions you start.</p></div><div className="settings-row"><div className="settings-account"><img src={githubUser.avatarUrl} alt=""/><div><strong>{githubUser.login}</strong><span>Connected</span></div></div><button className="settings-action secondary" onClick={() => void signOut()}>Sign out</button></div></section>
+          <section className="settings-section"><div className="settings-section-title"><h2>Recent repositories</h2><p>Clear GitMint’s remembered list. This never deletes repository files from your computer.</p></div><div className="settings-row"><div><strong>{recent.length} {recent.length === 1 ? 'repository' : 'repositories'}</strong><span>Saved on this computer</span></div><button className="settings-action" disabled={recent.length === 0} onClick={() => { if (window.confirm('Clear the recently opened repository list? Your repository files will not be deleted.')) { setRecent([]); setNotice('Recent repositories cleared') } }}>Clear list</button></div></section>
         </div> : activeView === 'repositories' && selectedGithubRepository ? <GithubRepositoryDetail
           item={selectedGithubRepository}
           readme={repositoryReadme}
