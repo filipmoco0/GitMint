@@ -476,7 +476,7 @@ function App() {
     <div className="auth-icon"><GithubMark size={26} /></div>
     <div className="auth-kicker">GITHUB REQUIRED</div>
     <h1>Your Git workflow,<br /><em>refreshed.</em></h1>
-    <p>Sign in with GitHub to browse your repositories. Local Git operations stay on this Mac.</p>
+    <p>Sign in with GitHub to browse your repositories. Local Git operations stay on this computer.</p>
     {authError && <div className="auth-error" role="alert"><AlertCircle size={15} /><span>{authError}</span></div>}
     <button className="github-signin-button" onClick={() => void signInWithGithub()} disabled={authBusy}>
       <GithubMark size={17} />{authBusy ? 'Waiting for GitHub…' : 'Continue with GitHub'}

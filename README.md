@@ -1,9 +1,9 @@
 <div align="center">
   <img src="public/brand/wordmark.svg" width="300" alt="GitMint — Your Git workflow, refreshed." />
 
-  <p>A focused, open-source Git client for macOS. Browse your repositories, review changes, and make everyday Git work feel clear.</p>
+  <p>A focused, open-source desktop Git client. Browse your repositories, review changes, and make everyday Git work feel clear.</p>
 
-  <p><a href="https://github.com/filipmoco0/GitMint/releases/latest"><strong>Download GitMint for macOS</strong></a> &nbsp;·&nbsp; <a href="https://github.com/filipmoco0/GitMint/issues">Report a problem</a> &nbsp;·&nbsp; <a href="CONTRIBUTING.md">Contribute</a></p>
+  <p><a href="https://github.com/filipmoco0/GitMint/releases/latest"><strong>Download GitMint</strong></a> &nbsp;·&nbsp; <a href="https://github.com/filipmoco0/GitMint/issues">Report a problem</a> &nbsp;·&nbsp; <a href="CONTRIBUTING.md">Contribute</a></p>
 
   <p><img alt="Rust" src="https://img.shields.io/badge/Rust-app_logic-7A3E20?logo=rust&logoColor=white" /> <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" /> <img alt="macOS" src="https://img.shields.io/badge/macOS-Apple_silicon-111111?logo=apple&logoColor=white" /> <img alt="MIT License" src="https://img.shields.io/github/license/filipmoco0/GitMint" /> <img alt="Status" src="https://img.shields.io/badge/status-public_release-A6D6B0" /></p>
 
@@ -25,13 +25,11 @@ Git operations run locally through Git. GitHub sign-in authenticates repository 
 
 ## Get GitMint
 
-Download the latest Apple silicon build from [GitHub Releases](https://github.com/filipmoco0/GitMint/releases/latest). Builds are not signed with an Apple Developer ID or notarized, so macOS may block the app until you approve it in Privacy & Security settings.
-
-The first release targets Apple silicon. Please keep a backup of important work and report issues on [GitHub](https://github.com/filipmoco0/GitMint/issues).
+Download available builds from [GitHub Releases](https://github.com/filipmoco0/GitMint/releases/latest). Current published releases target Apple silicon. Windows and Linux installers will be produced by the desktop build workflow; publish the generated artifacts to a GitHub Release to make them downloadable. Please keep a backup of important work and report issues on [GitHub](https://github.com/filipmoco0/GitMint/issues).
 
 ## Build from source
 
-Requirements: macOS, Git, Node.js, Rust, and Xcode Command Line Tools.
+Requirements: Git, Node.js, and Rust. Platform-specific prerequisites are listed in the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/).
 
 1. Copy `.env.example` to `.env.local`. It includes the public GitMint OAuth client ID and HTTPS token-broker URL. For a custom OAuth app or broker, see [AUTHENTICATION.md](AUTHENTICATION.md).
 2. Install dependencies and start the app:
@@ -41,17 +39,19 @@ npm install
 npm run tauri:dev
 ```
 
-3. Build an Apple silicon installer:
+3. Build for your current desktop platform:
 
 ```sh
-npm run package:macos-dmg
+npm run tauri:build
 ```
 
-The installer is written to `src-tauri/target/release/bundle/dmg/`. `npm run tauri:build` builds the `.app` bundle only.
+On macOS this builds the `.app` bundle. To create a DMG, use `npm run package:macos-dmg`. On Windows, Tauri creates NSIS and MSI installers; on Linux, it creates Debian, RPM, and AppImage packages. Each platform must build its own native installers. macOS requires Xcode Command Line Tools, Windows requires Microsoft C++ Build Tools and WebView2, and Linux requires the Tauri system libraries.
+
+Linux GitHub sign-in uses the desktop Secret Service keyring (for example, GNOME Keyring or KWallet). Install and unlock a compatible keyring in your desktop session before signing in.
 
 ## Privacy
 
-GitMint stores your GitHub sign-in token in macOS Keychain. The token broker exchanges OAuth authorization codes and does not store tokens. Git operations are scoped to the selected local repository. Read [AUTHENTICATION.md](AUTHENTICATION.md) for details about the sign-in flow and permissions.
+GitMint stores your GitHub sign-in token in the operating system credential store: Keychain on macOS, Windows Credential Manager on Windows, and Secret Service on Linux. The token broker exchanges OAuth authorization codes and does not store tokens. Git operations are scoped to the selected local repository. Read [AUTHENTICATION.md](AUTHENTICATION.md) for details about the sign-in flow and permissions.
 
 ## Community
 
